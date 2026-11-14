@@ -36,15 +36,15 @@ lost-and-found-app/
 
 1. Clone the repository and install dependencies:
 ```bash
-git clone [https://github.com/li-yah-h/lost-and-found-app.git](https://github.com/li-yah-h/lost-and-found-app.git)
+git clone https://github.com/li-yah-h/lost-and-found-app.git
 cd lost-and-found-app/backend
 npm install
 ```
 
 2. Create `backend/.env` and add your MongoDB Atlas URI[cite: 5]:
 ```env
+MONGO_URI=mongodb+srv://<db_username>:<db_password>@cluster0.xr06blz.mongodb.net/
 PORT=5000
-MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/lostfound?retryWrites=true&w=majority
 ```
 
 3. Start the server:
