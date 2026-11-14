@@ -1,3 +1,5 @@
+const dns = require("node:dns");
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const express  = require("express");
 const mongoose = require("mongoose");
 const cors     = require("cors");
@@ -23,27 +25,48 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* ── Serve uploaded images as static files ── */
-// Access via: http://localhost:5000/uploads/filename.jpg
 app.use("/uploads", express.static(uploadsDir));
 
 /* ── Database connection ── */
-console.log("🔗 Connecting to MongoDB...", process.env.MONGO_URI);
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/lostfound";
+let dbConnected = false;
+
+console.log("🔗 Connecting to MongoDB...");
 mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
+  .connect(MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    dbConnected = true;
+  })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1);           // Exit if DB is unavailable
+    // Don't exit — let the health-check report the failure
   });
 
-/* ── Routes ── */
+/* ── API Routes ── */
 app.use("/api/items", require("./routes/itemRoutes"));
 
 /* ── Health check ── */
-app.get("/", (req, res) => res.json({ status: "MEC Lost & Found API is running 🚀" }));
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: dbConnected ? "ok" : "error",
+    db: dbConnected ? "connected" : "disconnected",
+    uptime: process.uptime()
+  });
+});
+
+/* ── Serve frontend static files (for single-server deployment) ── */
+const frontendDir = path.join(__dirname, "..", "frontend", "src");
+if (fs.existsSync(frontendDir)) {
+  app.use(express.static(frontendDir));
+  // Catch-all: serve index.html for any non-API route (SPA fallback)
+  app.get("/{*splat}", (_req, res) => {
+    res.sendFile(path.join(frontendDir, "index.html"));
+  });
+}
 
 /* ── Global error handler (must be last) ── */
-app.use((err, req, res, next) => {
+app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err.message);
   res.status(err.status || 500).json({ error: err.message || "Internal server error" });
 });

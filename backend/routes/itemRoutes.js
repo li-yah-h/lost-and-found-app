@@ -6,7 +6,7 @@ const path    = require("path");
 
 /* ── Multer storage config ── */
 const storage = multer.diskStorage({
-  destination: "./uploads",
+  destination: path.join(__dirname, "..", "uploads"),
   filename: (req, file, cb) => {
     // Sanitize original filename and prefix with timestamp
     const safe = file.originalname.replace(/\s+/g, "_");

@@ -395,10 +395,16 @@ button{cursor:pointer;font-family:inherit}
 /* ════════════════════════════════════════════
    CONFIG — change BASE_URL to match your backend
    ════════════════════════════════════════════ */
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = window.location.origin;
 const API      = BASE_URL + '/api/items';
 
 const ICONS = { Electronics:'💻', 'ID Cards':'🪪', Books:'📚', Others:'📦' };
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
 
 /* ── In-memory cache (populated from DB) ── */
 let foundItems = [];
@@ -415,16 +421,8 @@ async function loadAllItems() {
     const res = await fetch(API);
     if (!res.ok) throw new Error('Network error');
     const items = await res.json();
-    foundItems = items.filter(i => i.status === 'Found' || (i.status === 'Resolved' && i._originalStatus === 'Found'));
-    lostItems  = items.filter(i => i.status === 'Lost'  || (i.status === 'Resolved' && i._originalStatus === 'Lost'));
-    // Simple split: if resolved, decide by absence in found — just keep all in both for matching
-    foundItems = items.filter(i => ['Found','Resolved'].includes(i.status) && i.status !== 'Lost');
-    lostItems  = items.filter(i => ['Lost', 'Resolved'].includes(i.status) && i.status !== 'Found');
-    // Actually cleanest: backend stores status as Lost/Found/Resolved
-    // Re-split properly:
     foundItems = items.filter(i => i.status === 'Found');
     lostItems  = items.filter(i => i.status === 'Lost');
-    // Keep resolved items in both for display in All page — store separately
     window._allItems = items;
   } catch(err) {
     console.error('Failed to load items:', err);
@@ -504,7 +502,7 @@ function getAllMatches() {
    ════════════════════════════════════════════ */
 function imgContent(item) {
   if (item.image) {
-    return `<img src="${BASE_URL}/uploads/${item.image}" alt="${item.title}" loading="lazy"/>`;
+    return `<img src="${BASE_URL}/uploads/${encodeURIComponent(item.image)}" alt="${escapeHTML(item.title)}" loading="lazy"/>`;
   }
   return ICONS[item.category] || '📦';
 }
@@ -530,12 +528,12 @@ function cardHTML(item) {
       <div class="card-img">${imgContent(item)}</div>
       <div class="card-body">
         <div class="card-meta">
-          <span class="card-cat">${item.category}</span>
+          <span class="card-cat">${escapeHTML(item.category)}</span>
           <span class="card-date">${formatDate(item.date)}</span>
         </div>
-        <h3 class="card-title">${item.title}</h3>
-        <p class="card-desc">${item.description}</p>
-        <div class="card-contact">📬 <a href="mailto:${item.contact}">${item.contact}</a></div>
+        <h3 class="card-title">${escapeHTML(item.title)}</h3>
+        <p class="card-desc">${escapeHTML(item.description)}</p>
+        <div class="card-contact">📬 <a href="mailto:${encodeURIComponent(item.contact)}">${escapeHTML(item.contact)}</a></div>
       </div>
       ${resolveBtn}
     </div>`;
@@ -636,12 +634,12 @@ function matchSectionHTML(pairs) {
             <div class="match-banner">🔗 Possible match!</div>
             <div class="card-img">${imgContent(found)}</div>
             <div class="card-body">
-              <div class="card-meta"><span class="card-cat">${found.category}</span><span class="card-date">${formatDate(found.date)}</span></div>
-              <h3 class="card-title">Found: ${found.title}</h3>
-              <p class="card-desc" style="color:var(--found);font-weight:600">Finder: ${found.contact}</p>
+              <div class="card-meta"><span class="card-cat">${escapeHTML(found.category)}</span><span class="card-date">${formatDate(found.date)}</span></div>
+              <h3 class="card-title">Found: ${escapeHTML(found.title)}</h3>
+              <p class="card-desc" style="color:var(--found);font-weight:600">Finder: <a href="mailto:${encodeURIComponent(found.contact)}">${escapeHTML(found.contact)}</a></p>
               <div style="height:8px"></div>
-              <h3 class="card-title">Lost: ${lost.title}</h3>
-              <p class="card-desc" style="color:var(--lost);font-weight:600">Owner: ${lost.contact}</p>
+              <h3 class="card-title">Lost: ${escapeHTML(lost.title)}</h3>
+              <p class="card-desc" style="color:var(--lost);font-weight:600">Owner: <a href="mailto:${encodeURIComponent(lost.contact)}">${escapeHTML(lost.contact)}</a></p>
             </div>
             <div class="card-actions">
               <button class="btn-contact" onclick="resolveMatch('${found._id}','${lost._id}')">✅ Mark as Returned</button>
@@ -704,10 +702,10 @@ async function submitFoundForm(e) {
               <div class="status-badge">😟 Lost Report</div>
               <div class="card-img">${imgContent(m)}</div>
               <div class="card-body">
-                <div class="card-meta"><span class="card-cat">${m.category}</span><span class="card-date">${formatDate(m.date)}</span></div>
-                <h3 class="card-title">${m.title}</h3>
-                <p class="card-desc">${m.description}</p>
-                <div class="card-contact">📬 <a href="mailto:${m.contact}">${m.contact}</a></div>
+                <div class="card-meta"><span class="card-cat">${escapeHTML(m.category)}</span><span class="card-date">${formatDate(m.date)}</span></div>
+                <h3 class="card-title">${escapeHTML(m.title)}</h3>
+                <p class="card-desc">${escapeHTML(m.description)}</p>
+                <div class="card-contact">📬 <a href="mailto:${encodeURIComponent(m.contact)}">${escapeHTML(m.contact)}</a></div>
               </div>
               <div class="card-actions">
                 <button class="btn-resolve" onclick="resolveMatch('${newItem._id}','${m._id}')">✅ Mark as Returned</button>
@@ -774,10 +772,10 @@ async function submitLostForm(e) {
               <div class="status-badge">🎉 Found</div>
               <div class="card-img">${imgContent(m)}</div>
               <div class="card-body">
-                <div class="card-meta"><span class="card-cat">${m.category}</span><span class="card-date">${formatDate(m.date)}</span></div>
-                <h3 class="card-title">${m.title}</h3>
-                <p class="card-desc">${m.description}</p>
-                <div class="card-contact">📬 <a href="mailto:${m.contact}">${m.contact}</a></div>
+                <div class="card-meta"><span class="card-cat">${escapeHTML(m.category)}</span><span class="card-date">${formatDate(m.date)}</span></div>
+                <h3 class="card-title">${escapeHTML(m.title)}</h3>
+                <p class="card-desc">${escapeHTML(m.description)}</p>
+                <div class="card-contact">📬 <a href="mailto:${encodeURIComponent(m.contact)}">${escapeHTML(m.contact)}</a></div>
               </div>
               <div class="card-actions">
                 <button class="btn-resolve" onclick="resolveMatch('${m._id}','${newItem._id}')">✅ Mark as Returned</button>
