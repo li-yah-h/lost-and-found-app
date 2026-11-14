@@ -38,13 +38,6 @@ A full-stack web app for Model Engineering College students to report lost items
 
 ---
 
-## 🎥 Demo Video
-
-> [Click here to watch the demo](#)  
->
-](https://drive.google.com/file/d/1MoTljM15HqeW2f5ewB4R0zq6oTQW5UXJ/view?usp=sharing)
----
-
 ## 🏗️ Architecture Diagram
 
 ```
